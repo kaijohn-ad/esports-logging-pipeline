@@ -9,6 +9,7 @@ import asyncio
 from unittest.mock import Mock, patch, AsyncMock
 from datetime import datetime
 import time
+import requests
 
 import sys
 from pathlib import Path
@@ -25,6 +26,11 @@ class TestLoLFetcherEnhanced:
     def fetcher(self):
         """テスト用のLoLFetcherインスタンス"""
         return LoLFetcher("test_api_key", region="jp1")
+    
+    @pytest.fixture
+    def mock_slack_webhook(self):
+        """モックSlack Webhook URL"""
+        return "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
     
     def test_rate_limiter_initialization(self, fetcher):
         """レート制限機能の初期化テスト"""
@@ -109,6 +115,89 @@ class TestLoLFetcherEnhanced:
         # ログ機能が設定されているかテスト
         assert hasattr(fetcher, 'logger')
         assert fetcher.logger is not None
+    
+    @pytest.mark.asyncio
+    async def test_slack_notification_on_api_error(self, fetcher, mock_slack_webhook):
+        """API エラー時のSlack通知機能テスト"""
+        # Given: Slack webhook URLが設定されている
+        fetcher.set_slack_webhook(mock_slack_webhook)
+        
+        # When: API 429エラーが発生し、最大リトライを超える
+        error_429 = ApiError("Rate limit exceeded", 429)
+        
+        with patch.object(fetcher.watch.match, 'by_id') as mock_api:
+            with patch('requests.post') as mock_slack_post:
+                # API はずっと429エラーを返す
+                mock_api.side_effect = error_429
+                
+                # Then: Slackに通知が送信される
+                with pytest.raises(ApiError):
+                    await fetcher.fetch_with_retry(
+                        fetcher.watch.match.by_id, "test_match", max_retries=2
+                    )
+                
+                # Slack通知が呼ばれているかチェック
+                assert mock_slack_post.called
+                call_args = mock_slack_post.call_args
+                assert call_args[1]['json']['text'] is not None
+                assert 'API Error' in call_args[1]['json']['text']
+    
+    def test_set_slack_webhook_method_exists(self, fetcher):
+        """Slack webhook設定メソッドが存在することのテスト"""
+        # Given: LoLFetcherインスタンス
+        # Then: set_slack_webhookメソッドが存在する
+        assert hasattr(fetcher, 'set_slack_webhook')
+        assert callable(getattr(fetcher, 'set_slack_webhook'))
+    
+    @pytest.mark.asyncio 
+    async def test_slack_notification_content(self, fetcher, mock_slack_webhook):
+        """Slack通知の内容テスト"""
+        # Given: Slack webhook URLが設定されている
+        fetcher.set_slack_webhook(mock_slack_webhook)
+        
+        # When: 特定のAPIエラーが発生
+        error_500 = ApiError("Internal Server Error", 500)
+        
+        with patch.object(fetcher.watch.match, 'by_id') as mock_api:
+            with patch('requests.post') as mock_slack_post:
+                mock_api.side_effect = error_500
+                
+                # Then: 適切な内容でSlack通知が送信される
+                with pytest.raises(ApiError):
+                    await fetcher.fetch_with_retry(
+                        fetcher.watch.match.by_id, "test_match_123", max_retries=1
+                    )
+                
+                # 通知内容を検証
+                call_args = mock_slack_post.call_args
+                notification_text = call_args[1]['json']['text']
+                
+                assert 'API Error' in notification_text
+                assert 'test_match_123' in notification_text
+                assert '500' in notification_text
+                assert 'Internal Server Error' in notification_text
+    
+    @pytest.mark.asyncio
+    async def test_no_slack_notification_when_webhook_not_set(self, fetcher):
+        """Slack webhook未設定時は通知されないことのテスト"""
+        # Given: Slack webhook URLが設定されていない
+        # webhookが設定されていない状態
+        
+        # When: APIエラーが発生
+        error_429 = ApiError("Rate limit exceeded", 429)
+        
+        with patch.object(fetcher.watch.match, 'by_id') as mock_api:
+            with patch('requests.post') as mock_slack_post:
+                mock_api.side_effect = error_429
+                
+                # Then: Slack通知は送信されない
+                with pytest.raises(ApiError):
+                    await fetcher.fetch_with_retry(
+                        fetcher.watch.match.by_id, "test_match", max_retries=1
+                    )
+                
+                # Slack通知が呼ばれていないことを確認
+                assert not mock_slack_post.called
     
     def test_metrics_collection_setup(self, fetcher):
         """メトリクス収集機能の設定テスト"""

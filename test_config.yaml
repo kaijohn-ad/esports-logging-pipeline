@@ -1,0 +1,36 @@
+analysis:
+  fetch_settings:
+    fetch_timeline: true
+    match_count: 20
+    queue_type: ranked
+  kpi_weights:
+    cs_weight: 2
+    damage_weight: 20
+    kda_weight: 10
+    vision_weight: 5
+api:
+  openrouter_api_key: sk-or-test-key-67890
+  rate_limit:
+    requests_per_minute: 100
+    requests_per_second: 20
+  riot_api_key: RGAPI-test-key-12345
+  riot_region: jp1
+llm:
+  fallback_models:
+  - openai/gpt-4-turbo
+  - openai/gpt-3.5-turbo
+  max_tokens: 1000
+  primary_model: anthropic/claude-3.5-sonnet
+  temperature: 0.7
+player:
+  default_region: jp1
+  puuid: test-puuid-12345
+  summoner_name: TestSummoner
+  tracked_champions:
+  - Jinx
+  - Caitlyn
+  - Ashe
+storage:
+  cache_enabled: true
+  cache_ttl: 3600
+  database_path: data/lol_matches.db

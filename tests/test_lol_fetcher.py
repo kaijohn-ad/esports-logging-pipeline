@@ -10,6 +10,7 @@ from unittest.mock import Mock, patch, AsyncMock
 from datetime import datetime
 import time
 import requests
+import json
 
 import sys
 from pathlib import Path
@@ -17,6 +18,23 @@ sys.path.append(str(Path(__file__).parent.parent / "src"))
 
 from log_pipeline import LoLFetcher, RateLimiter
 from riotwatcher import ApiError
+
+# カスタム例外クラス
+class LoLFetcherError(Exception):
+    """LoLFetcher関連のカスタム例外"""
+    pass
+
+class APIRateLimitError(LoLFetcherError):
+    """APIレート制限エラー"""
+    pass
+
+class APIQuotaExceededError(LoLFetcherError):
+    """API割当量超過エラー"""
+    pass
+
+class DataValidationError(LoLFetcherError):
+    """データ検証エラー"""
+    pass
 
 
 class TestLoLFetcherEnhanced:
@@ -97,6 +115,132 @@ class TestLoLFetcherEnhanced:
                 )
             
             assert mock_api.call_count == 4  # 初回 + 3回リトライ
+    
+    # === 新しいエラーハンドリングテスト ===
+    
+    @pytest.mark.asyncio
+    async def test_fetch_match_details_with_error_handling(self, fetcher):
+        """fetch_match_detailsメソッドがエラーハンドリングを使用するかテスト"""
+        # Given: APIが500エラーを返す
+        error_500 = ApiError("Internal server error", 500)
+        
+        with patch.object(fetcher, 'fetch_with_retry') as mock_retry:
+            mock_retry.side_effect = error_500
+            
+            # When: fetch_match_detailsを呼び出す
+            with pytest.raises(ApiError):
+                await fetcher.fetch_match_details_safe("test_match")
+            
+            # Then: fetch_with_retryが呼ばれている
+            assert mock_retry.called
+    
+    @pytest.mark.asyncio 
+    async def test_fetch_summoner_rank_with_error_handling(self, fetcher):
+        """fetch_summoner_rankメソッドがエラーハンドリングを使用するかテスト"""
+        # Given: APIが403エラーを返す
+        error_403 = ApiError("Forbidden", 403)
+        
+        with patch.object(fetcher, 'fetch_with_retry') as mock_retry:
+            mock_retry.side_effect = error_403
+            
+            # When: fetch_summoner_rankを呼び出す
+            with pytest.raises(ApiError):
+                await fetcher.fetch_summoner_rank_safe("test_summoner")
+            
+            # Then: fetch_with_retryが呼ばれている
+            assert mock_retry.called
+    
+    def test_custom_exception_classes_exist(self):
+        """カスタム例外クラスが存在することのテスト"""
+        # カスタム例外クラスがインポートできることを確認
+        from collectors.lol_fetcher import (
+            LoLFetcherError, 
+            APIRateLimitError, 
+            APIQuotaExceededError,
+            DataValidationError
+        )
+        
+        # 継承関係の確認
+        assert issubclass(APIRateLimitError, LoLFetcherError)
+        assert issubclass(APIQuotaExceededError, LoLFetcherError)
+        assert issubclass(DataValidationError, LoLFetcherError)
+    
+    @pytest.mark.asyncio
+    async def test_429_error_converts_to_rate_limit_error(self, fetcher):
+        """429エラーがAPIRateLimitErrorに変換されるかテスト"""
+        error_429 = ApiError("Rate limit exceeded", 429)
+        
+        with patch.object(fetcher.watch.match, 'by_id') as mock_api:
+            mock_api.side_effect = error_429
+            
+            with pytest.raises(APIRateLimitError):
+                await fetcher.fetch_with_enhanced_error_handling(
+                    fetcher.watch.match.by_id, "test_match", max_retries=1
+                )
+    
+    @pytest.mark.asyncio
+    async def test_structured_error_logging(self, fetcher):
+        """構造化ログでエラーが記録されるかテスト"""
+        error_500 = ApiError("Internal server error", 500)
+        
+        with patch.object(fetcher.watch.match, 'by_id') as mock_api:
+            with patch.object(fetcher.logger, 'error') as mock_log:
+                mock_api.side_effect = error_500
+                
+                with pytest.raises(ApiError):
+                    await fetcher.fetch_with_retry(
+                        fetcher.watch.match.by_id, "test_match", max_retries=1
+                    )
+                
+                # 構造化ログが呼ばれているか確認
+                assert mock_log.called
+                call_args = mock_log.call_args[0][0]
+                # JSON形式のログかチェック
+                try:
+                    log_data = json.loads(call_args)
+                    assert 'error_type' in log_data
+                    assert 'status_code' in log_data
+                    assert 'match_id' in log_data
+                except (json.JSONDecodeError, TypeError):
+                    # 構造化ログが実装されていない場合は失敗
+                    pytest.fail("構造化ログが実装されていません")
+    
+    def test_error_metrics_collection(self, fetcher):
+        """エラーメトリクスが収集されるかテスト"""
+        # Given: エラーメトリクス機能が実装されている
+        assert hasattr(fetcher, 'error_metrics')
+        assert hasattr(fetcher, 'get_error_statistics')
+        
+        # メトリクスの初期化
+        metrics = fetcher.get_error_statistics()
+        assert 'total_errors' in metrics
+        assert 'error_by_type' in metrics
+        assert 'error_rate' in metrics
+    
+    @pytest.mark.asyncio
+    async def test_error_metrics_tracking(self, fetcher):
+        """エラーが発生した時にメトリクスが更新されるかテスト"""
+        # Given: 初期メトリクス
+        initial_metrics = fetcher.get_error_statistics()
+        initial_count = initial_metrics['total_errors']
+        
+        # When: APIエラーが発生
+        error_429 = ApiError("Rate limit exceeded", 429)
+        
+        with patch.object(fetcher.watch.match, 'by_id') as mock_api:
+            mock_api.side_effect = error_429
+            
+            try:
+                await fetcher.fetch_with_retry(
+                    fetcher.watch.match.by_id, "test_match", max_retries=1
+                )
+            except ApiError:
+                pass
+        
+        # Then: メトリクスが更新されている
+        updated_metrics = fetcher.get_error_statistics()
+        assert updated_metrics['total_errors'] > initial_count
+        assert updated_metrics['error_by_type']['429'] > 0
     
     def test_fetch_match_details_exists(self, fetcher):
         """マッチ詳細情報の取得メソッドが存在することのテスト"""

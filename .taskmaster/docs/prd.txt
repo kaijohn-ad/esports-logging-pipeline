@@ -1,0 +1,145 @@
+# eSports ログ取得・解析パイプライン設計書
+
+## 1. 目的とゴール
+
+- **目的**: League of Legends・VALORANT・Overwatch 2・Apex Legends など複数タイトルで、試合データを自動収集し、ChatGPT によるフィードバックループを 1 分以内で回せる基盤を構築する。
+- **ゴール**:
+  1. リアルタイム & 試合後バッチの両方式をサポート。
+  2. すべてのタイトルを共通スキーマに正規化。
+  3. SQLite／Google Sheets のいずれかへ保存し、週次 KPI 可視化を容易に。
+  4. CLI 1 コマンドでローカル or Docker 起動、CI/CD で GitHub Actions 連携。
+
+## 2. 対応タイトルと取得経路
+
+| タイトル          | モード         | 取得経路                         | 実装方法           | 備考                     |
+| ------------- | ----------- | ---------------------------- | -------------- | ---------------------- |
+| LoL           | 試合後         | Riot API (match‑v5/timeline) | `riotwatcher`  | レート制限 20 req/2 min     |
+| VALORANT      | リアルタイム      | Overwolf GEP                 | TS + WebSocket | ラウンド/kill/weapon       |
+| Overwatch 2   | RT + log 補完 | GEP + `Overwatch.log`        | TS + Python    | GEP β版、イベント欠落補完        |
+| Apex          | リアルタイム      | Overwolf GEP                 | TS + WebSocket | リング情報取得可               |
+| SF6           | 試合後         | replay→JSON 変換               | Python         | `replay_to_json` ツール利用 |
+| Splatoon 3    | 試合後         | SplatNet3 API                | Python         | `s3s` ラッパー             |
+| Pokémon UNITE | 試合後         | uniteapi.dev                 | Python         | 非公式 API                |
+| Marvel Rivals | 暫定 OCR      | Screen OCR                   | Python         | Overwolf 対応待ち          |
+
+## 3. システム構成概要
+
+```mermaid
+graph TD
+  subgraph Collectors
+    OV[Overwolf Apps] --> Q[Local Queue]
+    API[API Cron Jobs] --> Q
+  end
+  Q --> C[Canonizer]
+  C --> DB[(SQLite\nOR\nGoogle Sheets)]
+  DB --> KPI[Weekly KPI Job]
+  KPI --> GPT[ChatGPT Prompt Builder]
+  GPT --> User[練習ドリル]
+```
+
+### 3.1 技術スタック
+
+- **Python 3.12** (ETL / CLI / Canonizer)
+- **TypeScript 5** (Overwolf RT Collectors)
+- **SQLite 3 or Google Sheets API v4**
+- **Docker + docker‑compose**（任意）
+- **GitHub Actions**（CI／自動テスト／Docker build）
+
+## 4. モジュール設計
+
+### 4.1 Collector Layer
+
+| モジュール                 | 説明                          | 主要クラス / 関数                       |
+| --------------------- | --------------------------- | -------------------------------- |
+| **overwolf-val**      | VAL / OW2 / Apex 用 RT 収集アプリ | `EventListener`, `FileRotator`   |
+| **riot\_fetcher**     | LoL マッチ・タイムライン取得            | `MatchPoller`, `TimelineFetcher` |
+| **replay\_parser**    | SF6 replay.bin → JSON       | `BinParser`, `FrameMapper`       |
+| **splatoon\_fetcher** | s3s CLI ラッパー                | `BattleFetcher`                  |
+
+### 4.2 Canonizer
+
+- 役割: タイトル固有 JSON → 共通スキーマ
+- クラス: `CanonizerFactory`, `LoLCanonizer`, `ValCanonizer` …
+- 共通スキーマ v1.0
+
+```json
+{
+  "timestamp": 523.45,
+  "event": "stun",      // kill, death, ult, ring_move など
+  "actor":  "Leona",
+  "target": "Jinx",
+  "meta":   { "weapon": "Vandal", "headshot": true }
+}
+```
+
+### 4.3 Storage
+
+- デフォルト: `SQLite` (ファイル `data/esports.db`)
+- オプション: `GoogleSheetsStore` クラスで Sheets にミラー
+- テーブル設計（抜粋）
+
+```sql
+CREATE TABLE match (
+  id TEXT PRIMARY KEY,
+  title TEXT,
+  patch TEXT,
+  timestamp DATETIME
+);
+CREATE TABLE event (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  match_id TEXT,
+  ts REAL,
+  event TEXT,
+  actor TEXT,
+  target TEXT,
+  meta  JSON
+);
+```
+
+### 4.4 KPI Job
+
+- 週次 cron (`0 3 * * 1` JST) で `kpi_builder.py` 実行
+- KPI 例: CS/10min, First‑Death%, Avg StunTime, RingDelaySec
+- 結果を Sheets `kpi!A1` へアップロード
+
+### 4.5 ChatGPT Prompt Builder
+
+- `prompt_builder.py`: KPI と直近 3 match の event サマリを要約
+- OpenAI SDK or local call to ChatGPT
+
+## 5. エラー処理 & 監視
+
+| 障害           | 検知方法                       | リトライ         | 通知            |
+| ------------ | -------------------------- | ------------ | ------------- |
+| API 429      | HTTP ステータス                 | exp. backoff | Slack Webhook |
+| GEP イベント欠落   | ハートビート 60 s 監視             | 自動再接続        | ローカル通知        |
+| Canonizer 例外 | `try/except` & sentry\_sdk | –            | Sentry        |
+
+## 6. 開発フロー（Cursor / ClaudeCode 想定）
+
+1. ``** ブランチ**に本設計書配置。
+2. Cursor で `collector/overwolf-val.ts` を AI 生成 → テスト stub も自動生成。
+3. ClaudeCode で `canonizer/riot.py` をペアプロ生成。
+4. `pytest` によるユニットテスト → GitHub Actions で `push` 時自動実行。
+5. main ブランチマージ後、`docker build & push` → `ghcr.io`。
+
+## 7. デプロイ例
+
+```bash
+# ローカル quick‑start
+make venv && source .venv/bin/activate
+python cli.py pull-all   # API バッチ取得
+python cli.py run-gep    # RT Collector 起動
+python cli.py build-kpi  # KPI 集計
+```
+
+## 8. 今後の拡張
+
+- Grafana + Prometheus でリアルタイムダッシュボード
+- OpenTelemetry による分散トレース
+- Cloud Run / ECS Fargate へのコンテナデプロイ
+- LLM による **自動コーチング応答の Slack Bot 化**
+
+---
+
+### 作成: 2025‑01‑08 

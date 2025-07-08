@@ -1,0 +1,11 @@
+# Task ID: 23
+# Title: Integrate ChatGPT API
+# Status: done
+# Dependencies: 14
+# Priority: low
+# Description: Integrate ChatGPT API for generating feedback.
+# Details:
+Use OpenAI SDK or local call to ChatGPT to generate feedback based on the prompt built by `prompt_builder.py`.
+
+# Test Strategy:
+Send prompts to ChatGPT and verify that the generated feedback is relevant and useful.

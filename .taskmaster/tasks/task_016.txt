@@ -1,0 +1,11 @@
+# Task ID: 16
+# Title: Implement GEP Error Handling
+# Status: pending
+# Dependencies: 2, 3, 4
+# Priority: medium
+# Description: Implement error handling for GEP event loss with heartbeat monitoring and automatic reconnection.
+# Details:
+Implement heartbeat monitoring in `overwolf-val.ts`, `overwolf-ow2.ts`, and `overwolf-apex.ts`. Monitor for event loss every 60 seconds. Implement automatic reconnection on event loss. Send local notifications.
+
+# Test Strategy:
+Simulate GEP event loss and verify that the heartbeat monitoring and automatic reconnection work correctly. Check local notifications.

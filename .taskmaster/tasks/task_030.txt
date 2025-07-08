@@ -1,0 +1,22 @@
+# Task ID: 30
+# Title: Generalize and Extend KPI Calculation Functionality for Multiple Games
+# Status: pending
+# Dependencies: 5, 10, 13, 29
+# Priority: medium
+# Description: Extend the KPI calculation functionality to support multiple games (VALORANT, Apex Legends, Overwatch 2, etc.) by generalizing the existing LoL-specific KPI calculations. Build a comprehensive KPI system that integrates game-agnostic and game-specific performance metrics.
+# Details:
+1.  Refactor the existing KPI calculation logic in `kpi_builder.py` to support multiple games.
+2.  Implement game-specific KPI calculation functions for VALORANT, Apex Legends, and Overwatch 2, considering the unique metrics and gameplay mechanics of each game.
+3.  Create a configuration system to define and manage game-specific KPIs, allowing for easy addition or modification of KPIs without code changes.
+4.  Integrate the new game-specific KPI calculations with the existing data pipeline, ensuring that the correct KPIs are calculated based on the game being processed.
+5.  Develop a unified data model to represent both game-agnostic and game-specific KPIs, facilitating consistent storage and retrieval.
+6.  Update the KPI job scheduler to trigger game-specific KPI calculations based on the available data.
+7.  Ensure that the system is scalable and can handle a large number of games and KPIs without performance degradation.
+
+# Test Strategy:
+1.  Create unit tests for each game-specific KPI calculation function to verify the accuracy of the calculated KPIs.
+2.  Develop integration tests to ensure that the game-specific KPI calculations are correctly integrated with the data pipeline and storage.
+3.  Test the configuration system to verify that game-specific KPIs can be easily added, modified, or removed without code changes.
+4.  Run end-to-end tests to verify that the KPI job scheduler triggers the correct game-specific KPI calculations based on the available data.
+5.  Monitor the system performance to ensure that it can handle a large number of games and KPIs without performance degradation.
+6.  Validate the calculated KPIs against known benchmarks and expert analysis to ensure their accuracy and relevance.

@@ -1,0 +1,11 @@
+# Task ID: 5
+# Title: Implement League of Legends Match Data Fetcher
+# Status: done
+# Dependencies: 1
+# Priority: high
+# Description: Implement the Riot API fetcher for League of Legends match data.
+# Details:
+Create `collector/riot_fetcher.py`. Implement `MatchPoller` to fetch match IDs. Implement `TimelineFetcher` to fetch match timeline data using `riotwatcher`. Handle rate limits (20 req/2 min).
+
+# Test Strategy:
+Fetch LoL match and timeline data using the Riot API. Verify data integrity and rate limit handling.

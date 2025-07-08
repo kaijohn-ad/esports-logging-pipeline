@@ -1,0 +1,11 @@
+# Task ID: 6
+# Title: Implement Street Fighter 6 Replay Parser
+# Status: pending
+# Dependencies: 1, 28
+# Priority: medium
+# Description: Implement the replay parser for Street Fighter 6 replay files.
+# Details:
+Create `collector/replay_parser.py`. Use `replay_to_json` tool to convert replay.bin files to JSON. Implement `BinParser` and `FrameMapper` to process the JSON data.
+
+# Test Strategy:
+Parse SF6 replay files and verify the extracted JSON data against expected values.

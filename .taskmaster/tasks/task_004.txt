@@ -1,0 +1,11 @@
+# Task ID: 4
+# Title: Implement Apex Legends Real-time Collector
+# Status: pending
+# Dependencies: 1, 28
+# Priority: medium
+# Description: Implement the Overwolf real-time collector for Apex Legends using TypeScript and WebSockets.
+# Details:
+Create `collector/overwolf-apex.ts`. Implement `EventListener` to capture game events via Overwolf GEP. Handle WebSocket connections. Implement data parsing and queueing to local queue. Capture ring information.
+
+# Test Strategy:
+Simulate Apex Legends game events and verify that the collector captures and queues the data correctly. Check ring information capture.

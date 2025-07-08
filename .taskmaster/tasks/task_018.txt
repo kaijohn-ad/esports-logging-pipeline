@@ -1,0 +1,11 @@
+# Task ID: 18
+# Title: Implement CLI
+# Status: pending
+# Dependencies: 1, 15, 16, 17
+# Priority: high
+# Description: Implement CLI using Python to pull all API data, run GEP collectors, and build KPIs.
+# Details:
+Create `cli.py`. Implement `pull-all` command to fetch API data. Implement `run-gep` command to start RT collectors. Implement `build-kpi` command to calculate KPIs.
+
+# Test Strategy:
+Run the CLI commands and verify that they perform the expected actions.

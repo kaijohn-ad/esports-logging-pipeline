@@ -1,0 +1,11 @@
+# Task ID: 8
+# Title: Implement Pokémon UNITE Data Fetcher
+# Status: pending
+# Dependencies: 1, 28
+# Priority: low
+# Description: Implement the Pokémon UNITE data fetcher using the uniteapi.dev API.
+# Details:
+Create `collector/unite_fetcher.py`. Use Python to interact with the uniteapi.dev API. Fetch match data.
+
+# Test Strategy:
+Fetch Pokémon UNITE match data using the uniteapi.dev API. Verify data integrity.

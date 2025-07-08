@@ -1,0 +1,11 @@
+# Task ID: 3
+# Title: Implement Overwatch 2 Real-time Collector
+# Status: pending
+# Dependencies: 1, 28
+# Priority: medium
+# Description: Implement the Overwolf real-time collector for Overwatch 2 using TypeScript and Python.
+# Details:
+Create `collector/overwolf-ow2.ts` and `collector/ow2_log_parser.py`. Implement `EventListener` in TS to capture GEP events. Create Python script to parse `Overwatch.log` for missing events. Combine data streams. Queue data to local queue.
+
+# Test Strategy:
+Simulate Overwatch 2 game events and verify that the collector captures and merges GEP and log data correctly. Verify event completeness.

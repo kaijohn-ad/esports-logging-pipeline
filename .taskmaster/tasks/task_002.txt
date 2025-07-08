@@ -1,0 +1,11 @@
+# Task ID: 2
+# Title: Implement VALORANT Real-time Collector
+# Status: pending
+# Dependencies: 1, 28
+# Priority: high
+# Description: Implement the Overwolf real-time collector for VALORANT using TypeScript and WebSockets.
+# Details:
+Create `collector/overwolf-val.ts`. Implement `EventListener` to capture game events via Overwolf GEP. Handle WebSocket connections. Implement data parsing and queueing to local queue. Use `FileRotator` for log management.
+
+# Test Strategy:
+Simulate VALORANT game events and verify that the collector captures and queues the data correctly. Check log rotation.

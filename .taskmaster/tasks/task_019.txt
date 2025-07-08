@@ -1,0 +1,11 @@
+# Task ID: 19
+# Title: Create Dockerfile and docker-compose.yml
+# Status: pending
+# Dependencies: 18
+# Priority: medium
+# Description: Create a Dockerfile and docker-compose.yml for containerization.
+# Details:
+Create a Dockerfile to build a Docker image for the application. Create a docker-compose.yml file to define the services and dependencies.
+
+# Test Strategy:
+Build the Docker image and run the application using docker-compose. Verify that the application runs correctly in the container.

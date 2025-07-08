@@ -44,6 +44,18 @@ export RIOT_API_KEY="your_riot_api_key"
 export OPENROUTER_API_KEY="your_openrouter_api_key"
 ```
 
+### MCP設定（Cursor IDEユーザー向け）
+
+```bash
+# MCPサーバー設定をコピー
+cp .cursor/mcp.json.example .cursor/mcp.json
+
+# .cursor/mcp.jsonを編集してAPIキーを設定
+# YOUR_*_API_KEY_HEREを実際のAPIキーに置き換え
+```
+
+⚠️ **セキュリティ注意**: `.cursor/mcp.json`ファイルは実際のAPIキーを含むため、リポジトリには含まれません。必ず個人の環境でのみ設定してください。
+
 ## 📊 使用方法
 
 ### 基本的な使用方法

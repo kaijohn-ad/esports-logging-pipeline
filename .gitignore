@@ -146,6 +146,9 @@ Thumbs.db
 .env.test.local
 .env.production.local
 
+# MCP Configuration (contains API keys)
+.cursor/mcp.json
+
 # Windows
 *.lnk 
 

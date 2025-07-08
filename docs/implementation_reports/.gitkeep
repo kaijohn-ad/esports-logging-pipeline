@@ -1,0 +1,12 @@
+# 実装レポートディレクトリ
+
+このディレクトリには、バックグラウンドエージェントが作成する実装レポートが保存されます。
+
+## ファイル命名規則
+- `YYYY-MM-DD_task-[TaskID]_[機能名]_implementation_report.md`
+- 例: `2025-01-21_task-15_weekly_kpi_dashboard_implementation_report.md`
+- TaskIDは必須項目（TaskMaster ID、GitHub Issue番号など）
+
+## 保存期間
+- 実装レポートは削除せずに永続的に保存する
+- プロジェクトの履歴と変更追跡のために重要 

@@ -154,7 +154,7 @@
           10,
           "28"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -208,7 +208,7 @@
         "dependencies": [
           14
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -331,7 +331,7 @@
         "dependencies": [
           23
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -355,7 +355,7 @@
         "description": "Create unit tests for the fetcher, canonizer, and KPI functionalities. Develop a comprehensive test suite using pytest to ensure thorough testing of LoLFetcher, LoLCanonizer, and KPI calculation features, aiming for at least 80% test coverage.",
         "details": "1.  Set up pytest in the project.\n2.  Create test files for each module: `test_fetcher.py`, `test_canonizer.py`, and `test_kpi.py`.\n3.  Write test cases for `LoLFetcher` to verify data fetching from the Riot API, including handling of rate limits and data integrity.\n4.  Write test cases for `LoLCanonizer` to ensure data transformation to the common schema v1.0.\n5.  Write test cases for the KPI calculation functions in `kpi_builder.py` to verify the accuracy of calculated KPIs such as CS/10min, First-Death%, Avg StunTime, and RingDelaySec.\n6.  Use pytest fixtures to set up test environments and mock external API calls.\n7.  Implement test coverage measurement using pytest-cov.\n8.  Ensure that the test suite covers at least 80% of the code in the fetcher, canonizer, and KPI modules.\n9.  Integrate tests into the CI/CD pipeline to run automatically on each commit.",
         "testStrategy": "1.  Run pytest with coverage measurement: `pytest --cov=./ --cov-report term-missing`.\n2.  Verify that all tests pass without errors.\n3.  Check the test coverage report to ensure that it is at least 80% for the fetcher, canonizer, and KPI modules.\n4.  Manually inspect the test cases to ensure that they cover all critical functionalities and edge cases.\n5.  Use mutation testing to assess the quality of the tests.\n6.  Monitor test execution time and optimize tests for performance.",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           5,
           10,
@@ -370,7 +370,7 @@
         "description": "Implement a configuration management feature for OpenRouter, including API key management, model selection, fallback settings, and rate limiting. This system will securely manage the integration with the OpenRouter API and support multiple LLM models.",
         "details": "1.  Create a new module `openrouter_config.py` to manage OpenRouter settings.\n2.  Implement API key management with secure storage and retrieval.\n3.  Develop a user interface (UI) or CLI for model selection, allowing users to choose from available LLM models.\n4.  Implement fallback settings to specify alternative models if the primary model fails.\n5.  Integrate rate limiting to prevent abuse and ensure fair usage of the OpenRouter API.\n6.  Ensure secure communication and data handling with the OpenRouter API.\n7.  Store the configuration in SQLite (using task 11) for persistence.\n8.  Integrate with ChatGPT API (task 23) to test model configurations and fallback scenarios.\n9.  Consider using environment variables for sensitive information like API keys.",
         "testStrategy": "1.  Test API key management by creating, updating, and deleting API keys.\n2.  Verify model selection by switching between different LLM models and ensuring the application uses the selected model.\n3.  Test fallback settings by simulating model failures and verifying that the application falls back to the specified alternative model.\n4.  Test rate limiting by sending multiple requests and verifying that the rate limits are enforced.\n5.  Monitor API usage and error logs to ensure proper integration with the OpenRouter API.\n6.  Validate that the configuration is stored correctly in SQLite and can be retrieved.\n7.  Use ChatGPT API to validate the functionality of the selected model.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           5,
           10,
@@ -386,7 +386,7 @@
         "description": "Refactor the codebase by modularizing the existing single-file log_pipeline.py into a structured project with collectors/, canonizer/, storage/, kpi/, and llm/ directories.",
         "details": "1. Create the directories: collectors/, canonizer/, storage/, kpi/, and llm/.\n2. Analyze the existing log_pipeline.py to identify logical modules and their dependencies.\n3. Move relevant code sections into appropriately named files within the new directories (e.g., collector-related code into collectors/).\n4. Implement necessary inter-module communication mechanisms, ensuring each module maintains independence while being able to interact with others.\n5. Update import statements and references to reflect the new module structure.\n6. Ensure that the main execution flow is preserved after the refactoring.",
         "testStrategy": "1. Run existing tests to ensure that the refactored code maintains the same functionality as the original.\n2. Create new integration tests to verify the interactions between the different modules.\n3. Manually inspect the code to ensure that the modularization has improved code readability and maintainability.\n4. Verify that the project structure adheres to the specified directory structure.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           1
         ],
@@ -431,7 +431,7 @@
         "description": "Implement a comprehensive configuration management system that integrates YAML/JSON configuration files, environment variables, API key management, game-specific settings, rate limiting settings, and log settings. Extend the existing ConfigManager to build a robust configuration system suitable for production.",
         "details": "1.  Implement a new configuration management module that supports loading configurations from YAML/JSON files, environment variables, and secure storage for API keys.\n2.  Extend the existing `ConfigManager` class to integrate with the new configuration module.\n3.  Implement a mechanism to manage game-specific settings, allowing different configurations for VALORANT, Apex Legends, Overwatch 2, etc.\n4.  Implement rate limiting settings to control API usage and prevent abuse.\n5.  Implement log settings to configure logging levels, output destinations, and log rotation policies.\n6.  Ensure that all configurations are validated and that appropriate error handling is in place.\n7.  Implement a user interface (UI) or CLI for managing configurations, allowing users to easily update settings without code changes.\n8.  Securely store and manage API keys, using encryption and access controls to protect sensitive information.\n9.  Integrate with existing monitoring and alerting systems to notify administrators of configuration changes or errors.",
         "testStrategy": "1.  Create unit tests to verify that the configuration management system can load configurations from YAML/JSON files, environment variables, and secure storage.\n2.  Test the integration with the existing `ConfigManager` class to ensure that it correctly retrieves and applies configurations.\n3.  Verify that game-specific settings are correctly applied for different games.\n4.  Test rate limiting settings to ensure that API usage is controlled as expected.\n5.  Test log settings to ensure that logging is configured correctly and that logs are being written to the appropriate destinations.\n6.  Test the UI or CLI for managing configurations, ensuring that users can easily update settings and that changes are applied correctly.\n7.  Test API key management to ensure that API keys are securely stored and retrieved.\n8.  Simulate configuration changes and errors to verify that the monitoring and alerting systems are working correctly.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           5,
           10,
@@ -443,7 +443,7 @@
     ],
     "metadata": {
       "created": "2025-07-08T10:34:26.545Z",
-      "updated": "2025-07-08T10:42:50.739Z",
+      "updated": "2025-07-08T15:26:31.688Z",
       "description": "Tasks for master context"
     }
   }

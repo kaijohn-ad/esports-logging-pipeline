@@ -66,12 +66,15 @@ python src/log_pipeline.py pull-all --summoner-name "YourSummonerName"
 
 # KPIを集計
 python src/log_pipeline.py build-kpi
+
+# 週次KPI可視化レポートを生成
+python src/log_pipeline.py weekly-kpi --player-id "player1" --weeks 4 --output-dir "data/reports"
 ```
 
 ### プログラマティック使用
 
 ```python
-from src.log_pipeline import LoLFetcher
+from src.log_pipeline import LoLFetcher, WeeklyDashboard
 
 # フェッチャーを初期化
 fetcher = LoLFetcher(api_key="your_api_key")
@@ -82,6 +85,21 @@ match_data = fetcher.fetch_match_details("match_id")
 # プレイヤーパフォーマンスを抽出
 performance = fetcher.extract_player_performance(match_data, "puuid")
 print(f"KDA: {performance['kda']}")
+
+# 週次KPI可視化ダッシュボードを生成
+dashboard = WeeklyDashboard({
+    'output_dir': 'data/reports',
+    'theme': 'seaborn',
+    'include_interactive': True
+})
+
+report_files = dashboard.generate_weekly_report(
+    player_id="player1",
+    week_start="2025-01-13",
+    output_dir="data/reports"
+)
+
+print(f"Generated reports: {list(report_files.keys())}")
 ```
 
 ## 🧪 テスト実行
@@ -119,6 +137,11 @@ eSportsLoggingPipeline/
 - ✅ マッチ詳細情報の取得機能追加
 - ✅ レート制限とエラーハンドリング
 - ✅ プレイヤー・チームパフォーマンス抽出
+- ✅ 週次KPI可視化システム
+  - 週次データ集約機能
+  - チャンピオン別パフォーマンス分析
+  - インタラクティブダッシュボード生成
+  - 時系列トレンド分析
 - ✅ 包括的なテストスイート
 - ✅ Git リポジトリ初期化
 
@@ -137,6 +160,7 @@ eSportsLoggingPipeline/
 - **データベース**: SQLite
 - **ログ**: structlog
 - **非同期**: asyncio, aiohttp
+- **可視化**: matplotlib, plotly, seaborn, pandas
 
 ## 🤝 開発ガイドライン
 

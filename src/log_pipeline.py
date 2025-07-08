@@ -436,6 +436,173 @@ def build_kpi():
     con.close()
 
 # ---------------------------------------------------------------------------
+# Data Validation Classes
+# ---------------------------------------------------------------------------
+
+class ValidationResult(BaseModel):
+    """データ検証結果クラス"""
+    is_valid: bool
+    error_count: int = 0
+    warning_count: int = 0
+    errors: List[str] = Field(default_factory=list)
+    warnings: List[str] = Field(default_factory=list)
+    quality_score: float = 1.0  # 0.0 - 1.0
+
+
+class AnomalyReport(BaseModel):
+    """異常検出レポートクラス"""
+    event_id: str
+    anomaly_type: str
+    severity: str  # low, medium, high, critical
+    description: str
+    suggested_action: str = ""
+    confidence: float = 0.0  # 0.0 - 1.0
+
+
+class DataValidator:
+    """データ検証クラス"""
+    
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+    
+    def validate_match_completeness(self, match_data: Dict[str, Any]) -> ValidationResult:
+        """マッチデータの完全性をチェック"""
+        errors = []
+        warnings = []
+        
+        # 基本構造チェック
+        if not isinstance(match_data, dict):
+            errors.append("Match data must be a dictionary")
+            return ValidationResult(is_valid=False, error_count=1, errors=errors)
+        
+        # メタデータチェック
+        metadata = match_data.get("metadata", {})
+        if not metadata.get("matchId"):
+            errors.append("Missing matchId in metadata")
+        
+        participants = metadata.get("participants", [])
+        if len(participants) != 10:
+            errors.append(f"Expected 10 participants, got {len(participants)}")
+        
+        # 情報セクションチェック
+        info = match_data.get("info", {})
+        if not info:
+            errors.append("Missing info section")
+        else:
+            # ゲーム時間チェック
+            game_duration = info.get("gameDuration")
+            if game_duration is None:
+                errors.append("Missing gameDuration")
+            elif game_duration < 0:
+                errors.append("Game duration cannot be negative")
+            elif game_duration < 300:  # 5分未満
+                warnings.append("Unusually short game duration")
+            
+            # 参加者データチェック
+            info_participants = info.get("participants", [])
+            if len(info_participants) != 10:
+                errors.append(f"Expected 10 participants in info, got {len(info_participants)}")
+            
+            # チームデータチェック
+            teams = info.get("teams", [])
+            if len(teams) != 2:
+                errors.append(f"Expected 2 teams, got {len(teams)}")
+        
+        # 品質スコア計算
+        total_issues = len(errors) + len(warnings)
+        quality_score = max(0.0, 1.0 - (total_issues * 0.1))
+        
+        return ValidationResult(
+            is_valid=len(errors) == 0,
+            error_count=len(errors),
+            warning_count=len(warnings),
+            errors=errors,
+            warnings=warnings,
+            quality_score=quality_score
+        )
+    
+    def validate_timeline_consistency(self, timeline: Dict[str, Any]) -> ValidationResult:
+        """タイムラインの整合性をチェック"""
+        errors = []
+        warnings = []
+        
+        frames = timeline.get("info", {}).get("frames", [])
+        if not frames:
+            errors.append("No timeline frames found")
+            return ValidationResult(is_valid=False, error_count=1, errors=errors)
+        
+        last_frame_timestamp = -1
+        
+        for i, frame in enumerate(frames):
+            frame_timestamp = frame.get("timestamp", 0)
+            
+            # フレームタイムスタンプの時系列チェック
+            if frame_timestamp <= last_frame_timestamp:
+                errors.append(f"Frame {i} timestamp {frame_timestamp} is not after previous frame {last_frame_timestamp}")
+            
+            last_frame_timestamp = frame_timestamp
+            
+            # イベントタイムスタンプのチェック
+            events = frame.get("events", [])
+            for j, event in enumerate(events):
+                event_timestamp = event.get("timestamp", frame_timestamp)
+                
+                # イベントタイムスタンプがフレームタイムスタンプより古い場合
+                if event_timestamp < frame_timestamp:
+                    warnings.append(f"Event {j} in frame {i} has timestamp earlier than frame timestamp")
+        
+        # 品質スコア計算
+        total_issues = len(errors) + len(warnings)
+        quality_score = max(0.0, 1.0 - (total_issues * 0.15))
+        
+        return ValidationResult(
+            is_valid=len(errors) == 0,
+            error_count=len(errors),
+            warning_count=len(warnings),
+            errors=errors,
+            warnings=warnings,
+            quality_score=quality_score
+        )
+    
+    def detect_anomalies(self, events: List[Event]) -> List[AnomalyReport]:
+        """イベントの異常を検出"""
+        anomalies = []
+        
+        if not events:
+            return anomalies
+        
+        # タイムスタンプの異常検出
+        timestamps = [e.timestamp for e in events]
+        for i in range(1, len(timestamps)):
+            if timestamps[i] < timestamps[i-1]:
+                anomalies.append(AnomalyReport(
+                    event_id=f"event_{i}",
+                    anomaly_type="timestamp_order",
+                    severity="medium",
+                    description=f"Event timestamp {timestamps[i]} is earlier than previous event {timestamps[i-1]}",
+                    suggested_action="Check timeline consistency",
+                    confidence=0.9
+                ))
+        
+        # 異常な頻度のイベント検出
+        event_types = {}
+        for event in events:
+            event_types[event.event] = event_types.get(event.event, 0) + 1
+        
+        # キルイベントが異常に多い場合
+        if event_types.get("kill", 0) > 50:
+            anomalies.append(AnomalyReport(
+                event_id="kill_frequency",
+                anomaly_type="frequency_anomaly",
+                severity="high",
+                description=f"Unusually high number of kills: {event_types['kill']}",
+                suggested_action="Verify match data integrity",
+                confidence=0.8
+            ))
+        
+        return anomalies
+
+# ---------------------------------------------------------------------------
 # Entry
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":

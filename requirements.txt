@@ -32,5 +32,8 @@ structlog==23.2.0
 # Configuration
 PyYAML==6.0.1
 
+# Scheduling
+APScheduler==3.10.4
+
 # Development
 ipython==8.18.1 

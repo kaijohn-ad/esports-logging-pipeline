@@ -1,0 +1,95 @@
+# eSports Logging Pipeline - Scheduler Configuration
+# Task 7: Automatic Scheduling for Player Data Collection and Analysis
+
+# API Configuration
+api:
+  riot_api_key: ""  # Set via environment variable RIOT_API_KEY
+  openrouter_api_key: ""  # Set via environment variable OPENROUTER_API_KEY
+  riot_region: "jp1"
+  rate_limit:
+    max_requests: 20
+    time_window: 120
+
+# Player Configuration
+player:
+  summoner_name: ""
+  puuid: ""
+  default_region: "jp1"
+  tracked_champions: []
+
+# Error Handling Configuration
+error_handling:
+  slack_webhook_url: null  # Set your Slack webhook URL here
+  slack_notifications_enabled: false
+  max_retries: 3
+  retry_delay_base: 2.0
+  structured_logging: true
+  log_level: "INFO"
+  log_to_file: true
+  log_file_path: "logs/scheduler.log"
+  collect_metrics: true
+  metrics_retention_hours: 24
+  error_rate_threshold: 10.0
+  critical_error_threshold: 5
+  notify_on_errors: [429, 500, 502, 503, 504]
+  respect_rate_limits: true
+  adaptive_rate_limiting: true
+
+# Monitoring Configuration
+monitoring:
+  enabled: false
+  health_check_interval: 300
+  alert_channels: []
+  check_api_response_time: true
+  response_time_threshold: 2.0
+  check_error_rate: true
+  error_rate_threshold: 5.0
+  check_rate_limit_usage: true
+  rate_limit_usage_threshold: 80.0
+
+# Scheduler Configuration
+scheduler:
+  # Enable/disable scheduler
+  enabled: true
+  
+  # Data collection scheduling
+  data_collection_interval: "daily"  # daily, weekly, monthly
+  data_collection_cron: null  # Custom cron expression (optional)
+  
+  # Analysis scheduling
+  analysis_interval: "weekly"  # daily, weekly, monthly
+  analysis_cron: null  # Custom cron expression (optional)
+  
+  # Tracked players configuration
+  tracked_players:
+    - name: "ExamplePlayer1"
+      puuid: "your_player_puuid_here"
+    - name: "ExamplePlayer2"
+      puuid: "your_player_puuid_here"
+  
+  # Trend analysis settings
+  trend_analysis_enabled: true
+  trend_analysis_weeks: 4
+  
+  # Notification settings
+  notifications_enabled: true
+  notification_channels:
+    - "console"
+    - "file"
+    # - "slack"  # Enable if slack_webhook_url is configured
+    # - "email"  # Enable if email configuration is added
+  
+  # Data management
+  save_raw_data: true
+  data_retention_days: 30
+  
+  # Performance settings
+  max_concurrent_jobs: 3
+  job_timeout_minutes: 30
+
+# Example cron expressions:
+# "0 2 * * *"     # Daily at 2:00 AM
+# "0 2 * * 1"     # Weekly on Monday at 2:00 AM
+# "0 2 1 * *"     # Monthly on 1st at 2:00 AM
+# "0 */6 * * *"   # Every 6 hours
+# "30 1 * * *"    # Daily at 1:30 AM

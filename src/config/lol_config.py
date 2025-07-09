@@ -76,9 +76,43 @@ class MonitoringConfig(BaseModel):
     rate_limit_usage_threshold: float = 80.0  # %
 
 
+class SchedulerConfig(BaseModel):
+    """スケジューラー設定クラス"""
+    # スケジューラー有効化
+    enabled: bool = False
+    
+    # スケジューリング間隔設定
+    data_collection_interval: str = "daily"  # daily, weekly, monthly
+    data_collection_cron: Optional[str] = None  # カスタムCron表現
+    
+    # 分析実行間隔設定
+    analysis_interval: str = "weekly"  # daily, weekly, monthly
+    analysis_cron: Optional[str] = None  # カスタムCron表現
+    
+    # 追跡対象プレイヤー設定
+    tracked_players: List[Dict[str, str]] = Field(default_factory=list)  # [{"name": "Player1", "puuid": "..."}]
+    
+    # トレンド分析設定
+    trend_analysis_enabled: bool = True
+    trend_analysis_weeks: int = 4  # 過去何週分のトレンドを分析するか
+    
+    # 通知設定
+    notifications_enabled: bool = True
+    notification_channels: List[str] = Field(default_factory=lambda: ["file", "console"])  # file, console, slack
+    
+    # データ保存設定
+    save_raw_data: bool = True
+    data_retention_days: int = 30
+    
+    # 並列処理設定
+    max_concurrent_jobs: int = 3
+    job_timeout_minutes: int = 30
+
+
 class LoLConfig(BaseModel):
     """LoL総合設定クラス"""
     api: APIConfig = Field(default_factory=APIConfig)
     player: PlayerConfig = Field(default_factory=PlayerConfig)
     error_handling: ErrorHandlingConfig = Field(default_factory=ErrorHandlingConfig)
     monitoring: MonitoringConfig = Field(default_factory=MonitoringConfig)
+    scheduler: SchedulerConfig = Field(default_factory=SchedulerConfig)

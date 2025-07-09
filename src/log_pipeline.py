@@ -936,6 +936,167 @@ def weekly_kpi(
     output_dir: str = typer.Option("data/reports", help="Output directory for reports"),
     interactive: bool = typer.Option(True, help="Generate interactive dashboard")
 ):
+    """Generate weekly KPI report and visualizations"""
+    # 実装は既存のコードと同じ
+    pass
+
+@app.command()
+def start_scheduler(
+    config_file: str = typer.Option("config/lol_config.yaml", help="Configuration file path")
+):
+    """Start automatic data collection and analysis scheduler"""
+    try:
+        from .config import ConfigManager
+        from .scheduler import SchedulerManager
+        
+        # 設定読み込み
+        config_manager = ConfigManager(config_file)
+        config = config_manager.load_config()
+        
+        if not config.scheduler.enabled:
+            typer.echo("❌ Scheduler is disabled in configuration")
+            return
+        
+        # プレイヤー設定確認
+        if not config.scheduler.tracked_players:
+            typer.echo("❌ No tracked players configured")
+            return
+        
+        typer.echo("🚀 Starting scheduler...")
+        typer.echo(f"📊 Tracking {len(config.scheduler.tracked_players)} players")
+        typer.echo(f"📅 Collection interval: {config.scheduler.data_collection_interval}")
+        typer.echo(f"📈 Analysis interval: {config.scheduler.analysis_interval}")
+        
+        # スケジューラー開始
+        scheduler_manager = SchedulerManager(config)
+        scheduler_manager.start()
+        
+        typer.echo("✅ Scheduler started successfully")
+        typer.echo("Press Ctrl+C to stop...")
+        
+        # 無限ループでスケジューラー実行継続
+        try:
+            import asyncio
+            asyncio.get_event_loop().run_forever()
+        except KeyboardInterrupt:
+            typer.echo("\n🛑 Stopping scheduler...")
+            scheduler_manager.stop()
+            typer.echo("✅ Scheduler stopped")
+            
+    except Exception as e:
+        typer.echo(f"❌ Error starting scheduler: {e}")
+        raise typer.Exit(1)
+
+@app.command()
+def scheduler_status(
+    config_file: str = typer.Option("config/lol_config.yaml", help="Configuration file path")
+):
+    """Show scheduler status and job history"""
+    try:
+        from .config import ConfigManager
+        from .scheduler import SchedulerManager
+        
+        # 設定読み込み
+        config_manager = ConfigManager(config_file)
+        config = config_manager.load_config()
+        
+        scheduler_manager = SchedulerManager(config)
+        status = scheduler_manager.get_status()
+        
+        typer.echo("📊 Scheduler Status")
+        typer.echo("=" * 50)
+        typer.echo(f"Enabled: {'✅' if status['enabled'] else '❌'}")
+        typer.echo(f"Running: {'✅' if status['scheduler_running'] else '❌'}")
+        typer.echo(f"Tracked Players: {status['tracked_players']}")
+        typer.echo(f"Job History: {status['job_history_count']}")
+        
+        typer.echo("\n📅 Scheduled Jobs:")
+        for job in status['jobs']:
+            typer.echo(f"  • {job['name']}: {job['next_run'] or 'Not scheduled'}")
+        
+        if status['running_jobs']:
+            typer.echo("\n🔄 Running Jobs:")
+            for job_id in status['running_jobs']:
+                typer.echo(f"  • {job_id}")
+        
+        # 収集統計
+        stats = status['last_collection_stats']
+        typer.echo(f"\n📈 Collection Stats:")
+        typer.echo(f"  Total Matches: {stats['total_matches']}")
+        typer.echo(f"  Total Events: {stats['total_events']}")
+        typer.echo(f"  Latest Match: {stats['latest_match'] or 'None'}")
+        
+    except Exception as e:
+        typer.echo(f"❌ Error getting scheduler status: {e}")
+        raise typer.Exit(1)
+
+@app.command()
+def run_job(
+    job_id: str = typer.Argument(..., help="Job ID to run (data_collection, trend_analysis, data_cleanup)"),
+    config_file: str = typer.Option("config/lol_config.yaml", help="Configuration file path")
+):
+    """Manually run a scheduler job"""
+    try:
+        from .config import ConfigManager
+        from .scheduler import SchedulerManager
+        import asyncio
+        
+        # 設定読み込み
+        config_manager = ConfigManager(config_file)
+        config = config_manager.load_config()
+        
+        scheduler_manager = SchedulerManager(config)
+        
+        typer.echo(f"🚀 Running job: {job_id}")
+        
+        # 非同期でジョブ実行
+        async def run_job_async():
+            result = await scheduler_manager.run_job_manually(job_id)
+            return result
+        
+        result = asyncio.run(run_job_async())
+        
+        if result['success']:
+            typer.echo(f"✅ {result['message']}")
+        else:
+            typer.echo(f"❌ {result['message']}")
+            raise typer.Exit(1)
+            
+    except Exception as e:
+        typer.echo(f"❌ Error running job: {e}")
+        raise typer.Exit(1)
+
+@app.command()
+def test_notifications(
+    config_file: str = typer.Option("config/lol_config.yaml", help="Configuration file path")
+):
+    """Test notification system"""
+    try:
+        from .config import ConfigManager
+        from .scheduler import NotificationManager
+        
+        # 設定読み込み
+        config_manager = ConfigManager(config_file)
+        config = config_manager.load_config()
+        
+        notification_manager = NotificationManager(config)
+        
+        typer.echo("📢 Testing notification system...")
+        
+        result = notification_manager.test_notifications()
+        
+        if result.success:
+            typer.echo("✅ Notification test successful")
+            for message in result.messages:
+                typer.echo(f"  {message}")
+        else:
+            typer.echo("❌ Notification test failed")
+            for error in result.errors:
+                typer.echo(f"  {error}")
+                
+    except Exception as e:
+        typer.echo(f"❌ Error testing notifications: {e}")
+        raise typer.Exit(1)
     """Generate weekly KPI visualization and reports"""
     typer.echo(f"Generating weekly KPI report for player: {player_id}")
     

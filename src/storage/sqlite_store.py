@@ -11,6 +11,9 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 from contextlib import contextmanager
 
+# EVENT_CLASSのインポートを追加（遅延インポートで対応）
+EVENT_CLASS = None
+
 DB_PATH = Path("data/esports.db")
 
 
@@ -104,9 +107,25 @@ def get_match(db_path: Path, match_id: str) -> Optional[Dict[str, Any]]:
         return None
 
 
+def _get_event_class():
+    """Eventクラスを遅延インポートで取得"""
+    global EVENT_CLASS
+    if EVENT_CLASS is None:
+        import sys
+        import os
+        # 親ディレクトリをパスに追加
+        parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if parent_dir not in sys.path:
+            sys.path.append(parent_dir)
+        
+        from canonizer.event import Event
+        EVENT_CLASS = Event
+    return EVENT_CLASS
+
+
 def get_events_for_match(db_path: Path, match_id: str) -> List:
     """特定の試合のイベントを取得"""
-    from src.canonizer.event import Event
+    Event = _get_event_class()
     
     with get_db_connection(db_path) as conn:
         cur = conn.cursor()

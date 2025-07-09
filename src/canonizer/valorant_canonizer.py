@@ -206,6 +206,39 @@ class ValorantCanonizer:
         return events
 
     @staticmethod
+    def convert_round_kills_to_kill_events(events: List[Event]) -> List[Event]:
+        """round_killsイベントをkillイベントに変換する"""
+        kill_events = []
+        
+        for event in events:
+            if event.event == "round_kills":
+                kills_count = event.meta.get("kills", 0)
+                round_num = event.meta.get("round_num", 0)
+                
+                # 各キルに対して個別のkillイベントを生成
+                for kill_number in range(1, kills_count + 1):
+                    # タイムスタンプを少しずつずらす（10秒間隔と仮定）
+                    kill_timestamp = event.timestamp - 30.0 + (kill_number * 10.0)
+                    
+                    kill_event = Event(
+                        timestamp=kill_timestamp,
+                        event="kill",
+                        actor=event.actor,
+                        target=None,
+                        meta={
+                            "round_num": round_num,
+                            "kill_number": kill_number,
+                            "total_kills_in_round": kills_count,
+                            "puuid": event.meta.get("puuid"),
+                            "damage": event.meta.get("damage"),
+                            "score": event.meta.get("score")
+                        }
+                    )
+                    kill_events.append(kill_event)
+        
+        return kill_events
+
+    @staticmethod
     def player_stats_to_events(stats_data: Dict[str, Any], player_name: str) -> List[Event]:
         """プレイヤー統計データを共通イベントに変換"""
         events: List[Event] = []

@@ -1,6 +1,6 @@
 # Task ID: 4
 # Title: Implement Player Search with Riot ID Support
-# Status: pending
+# Status: done
 # Dependencies: 1, 2, 3
 # Priority: high
 # Description: Implement a player search system that supports Riot ID (GameName#Tagline), handles region mapping, fallback search methods, and retrieves detailed player information including match history and statistics.

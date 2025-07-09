@@ -1,6 +1,6 @@
 # Task ID: 5
 # Title: Verify Pipeline with Real Player Data and KPI Analysis
-# Status: pending
+# Status: done
 # Dependencies: 1, 2, 3, 4
 # Priority: high
 # Description: Verify the end-to-end pipeline functionality using real League of Legends player data, including KPI calculation, statistical analysis, and performance insights to validate the complete workflow.

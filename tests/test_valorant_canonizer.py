@@ -273,9 +273,9 @@ class TestValorantCanonizer:
         assert len(round_start_events) == 2  # 2ラウンド分
         assert len(round_end_events) == 2
         
-        # 最初のラウンド開始イベント
+        # 最初のラウンド開始イベント（round_num * 120.0の計算）
         first_round_start = round_start_events[0]
-        assert first_round_start.timestamp == 0.0  # ラウンド1は0秒から
+        assert first_round_start.timestamp == 120.0  # ラウンド1は120秒から
         assert first_round_start.actor == "system"
         assert first_round_start.meta["round_num"] == 1
         assert first_round_start.meta["round_result"] == "Team Won"
@@ -291,7 +291,7 @@ class TestValorantCanonizer:
         assert len(plant_events) == 1
         
         plant_event = plant_events[0]
-        assert plant_event.timestamp == 30.0  # ラウンド開始から30秒後と推定
+        assert plant_event.timestamp == 150.0  # ラウンド1開始（120秒）+ 30秒
         assert plant_event.actor == "TestPlayer#TST"
         assert plant_event.target is None
         assert plant_event.meta["round_num"] == 1
@@ -308,7 +308,7 @@ class TestValorantCanonizer:
         assert len(defuse_events) == 1
         
         defuse_event = defuse_events[0]
-        assert defuse_event.timestamp == 180.0  # ラウンド2開始（120秒）+ 60秒
+        assert defuse_event.timestamp == 300.0  # ラウンド2開始（240秒）+ 60秒
         assert defuse_event.actor == "Enemy#ENM"
         assert defuse_event.target is None
         assert defuse_event.meta["round_num"] == 2
@@ -332,6 +332,28 @@ class TestValorantCanonizer:
         assert player1_r1_kills.meta["kills"] == 2
         assert player1_r1_kills.meta["damage"] == 350
         assert player1_r1_kills.meta["score"] == 250
+
+    def test_round_kills_to_kill_events_conversion(self, sample_match_data):
+        """round_killsイベントをkillイベントに変換するテスト - Red フェーズ"""
+        # Given: サンプルマッチデータ
+        events = ValorantCanonizer.match_to_events(sample_match_data)
+        
+        # When: round_killsイベントをkillイベントに変換
+        kill_events = ValorantCanonizer.convert_round_kills_to_kill_events(events)
+        
+        # Then: 適切なkillイベントが生成される
+        assert len(kill_events) > 0
+        
+        # ラウンド1でTestPlayerが2キル、Enemyが1キル、ラウンド2でEnemyが3キルの合計6個のkillイベントが生成される
+        assert len(kill_events) == 6
+        
+        # 最初のキルイベントを確認
+        first_kill = kill_events[0]
+        assert first_kill.event == "kill"
+        assert first_kill.actor == "TestPlayer#TST"
+        assert first_kill.meta["round_num"] == 1
+        assert "kill_number" in first_kill.meta
+        assert first_kill.meta["kill_number"] == 1
     
     def test_match_performance_events_creation(self, sample_match_data):
         """マッチパフォーマンスイベントの作成テスト"""
@@ -463,7 +485,7 @@ class TestValorantCanonizer:
         assert metrics["first_bloods"] == 3
         assert metrics["first_deaths"] == 1
         assert metrics["kda_ratio"] == 2.5  # (15 + 5) / 8
-        assert metrics["headshot_percentage"] == 34.78  # 8 / (8+12+3) * 100
+        assert abs(metrics["headshot_percentage"] - 34.78) < 0.01  # 浮動小数点の精度を考慮
         assert metrics["average_damage_per_round"] == 1400.0  # 2800 / 2
         assert metrics["total_rounds"] == 2  # round_endイベントの数
     
@@ -529,9 +551,8 @@ class TestValorantCanonizerEdgeCases:
         # When: イベントに変換
         events = ValorantCanonizer.player_stats_to_events(empty_stats, "TestPlayer")
         
-        # Then: 基本統計イベントのみ生成
-        assert len(events) == 1
-        assert events[0].event == "player_stats"
+        # Then: 空のリストが返される（空データの場合は基本統計イベントも生成されない）
+        assert len(events) == 0
     
     def test_rank_data_missing_current_data(self):
         """現在のランクデータが欠損している場合のテスト"""

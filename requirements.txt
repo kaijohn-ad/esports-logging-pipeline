@@ -1,36 +1,15 @@
-# Core dependencies
-typer[all]==0.9.0
-pydantic==2.5.0
-riotwatcher==3.3.0
-aiofiles==23.2.1
-aiohttp==3.9.1
-
-# Environment variables
-python-dotenv==1.0.0
-
-# Database
-# sqlite3 is part of Python standard library
-
-# Visualization for Weekly KPI
-matplotlib==3.8.2
-plotly==5.17.0
-seaborn==0.13.0
-pandas==2.1.4
-
-# Testing
-pytest==7.4.3
-pytest-asyncio==0.21.1
-pytest-cov==4.1.0
-
-# Code quality
-flake8==6.1.0
-black==23.11.0
-
-# Logging
-structlog==23.2.0
-
-# Configuration
-PyYAML==6.0.1
-
-# Development
-ipython==8.18.1 
+requests
+aiohttp
+asyncio
+structlog
+sqlite3
+matplotlib
+pandas
+seaborn
+plotly
+pytest
+pytest-asyncio
+fastapi
+uvicorn
+websockets
+pydantic 

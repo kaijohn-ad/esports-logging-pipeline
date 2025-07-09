@@ -1,0 +1,22 @@
+# Task ID: 2
+# Title: Verify VALORANT Kill Event Processing and SQLite Storage
+# Status: pending
+# Dependencies: 6 (Not found), 7 (Not found), 8 (Not found), 1
+# Priority: high
+# Description: Verify the end-to-end process of fetching VALORANT kill events, normalizing them, and storing them in SQLite using existing components. This task ensures the correct functionality of the pipeline for VALORANT data.
+# Details:
+1. Write a minimal test script that utilizes ValorantFetcher to retrieve data from a sample VALORANT match (either a local file or a mock API response).
+2. Pipe the output of ValorantFetcher to ValorantCanonizer, ensuring that round_kills events are correctly identified and transformed into 'kill' events.
+3. Configure SQLiteStore to connect to a test SQLite database.
+4. Pipe the output of ValorantCanonizer to SQLiteStore, saving the normalized kill events into the database.
+5. Implement error handling and logging to capture any issues during the process.
+6. Ensure the test script can be easily executed and configured for different test scenarios.
+
+# Test Strategy:
+1. Execute the test script.
+2. Verify that the SQLite database contains 'kill' events.
+3. Check the database schema to ensure that the 'kill' events are stored in the correct format and columns.
+4. Examine the logs for any errors or warnings during the process.
+5. Compare the number of 'kill' events in the database with the expected number based on the sample VALORANT match data.
+6. Test with different VALORANT match data to ensure robustness.
+7. Confirm that the round_kills events are correctly normalized and stored with all relevant information.

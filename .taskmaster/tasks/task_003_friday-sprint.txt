@@ -1,0 +1,41 @@
+# Task ID: 3
+# Title: Create Integrated Demonstration Script
+# Status: pending
+# Dependencies: 1, 2
+# Priority: high
+# Description: Create a demonstration script that showcases the end-to-end functionality of extracting kill events from both League of Legends (LoL) and VALORANT match data and storing them in an SQLite database. This script will provide a clear and understandable demonstration of the system's capabilities.
+# Details:
+1.  **Script Structure:** Create a Python script named `demo_script.py`. The script should be well-commented and easy to follow.
+2.  **LoL Kill Event Extraction and Storage:**
+    *   Utilize the `LoLFetcher` to retrieve kill event data from a sample LoL match file (e.g., `sample_lol_match.json`).  Ensure this sample file is included in the repository or accessible.
+    *   Pipe the output of `LoLFetcher` to `LoLCanonizer` to normalize the kill events.
+    *   Configure `SQLiteStore` to connect to a demo SQLite database file (e.g., `demo.db`).
+    *   Pipe the output of `LoLCanonizer` to `SQLiteStore` to store the normalized LoL kill events in the database.
+3.  **VALORANT Kill Event Extraction and Storage:**
+    *   Utilize the `ValorantFetcher` to retrieve kill event data from a sample VALORANT match file (e.g., `sample_valorant_match.json`). Ensure this sample file is included in the repository or accessible.
+    *   Pipe the output of `ValorantFetcher` to `ValorantCanonizer` to normalize the kill events.
+    *   Pipe the output of `ValorantCanonizer` to `SQLiteStore` to store the normalized VALORANT kill events in the same `demo.db` database.
+4.  **Kill Event Retrieval and Display:**
+    *   Implement a function to query the `demo.db` database and retrieve all kill events (or a subset for brevity).
+    *   Format the retrieved kill events into a human-readable format.
+    *   Print the formatted kill events to the console.
+5.  **Clear Output and Instructions:**
+    *   Include clear instructions at the beginning of the script on how to run it and what to expect.
+    *   Use descriptive print statements throughout the script to indicate the progress and the data being processed.
+    *   Format the output to be easily understandable, highlighting the source of the kill events (LoL or VALORANT) and the key information (killer, victim, timestamp, etc.).
+6.  **Error Handling:** Implement basic error handling to catch potential exceptions (e.g., file not found, database connection errors) and provide informative error messages.
+7.  **Dependencies:** Ensure all necessary dependencies (e.g., `requests`, `sqlite3`) are listed in a `requirements.txt` file.
+
+# Test Strategy:
+1.  **Run the `demo_script.py` script.**
+2.  **Verify that the script executes without errors.** Check the console output for any error messages.
+3.  **Examine the `demo.db` SQLite database.**
+    *   Use a SQLite browser or command-line tool to open the database.
+    *   Verify that the database contains kill events from both LoL and VALORANT.
+    *   Check the data in the `kill_events` table to ensure that the kill events are stored correctly, with the expected columns and data types.
+    *   Verify that the `game` column correctly identifies the source of the kill event (LoL or VALORANT).
+4.  **Review the console output.**
+    *   Confirm that the script prints the retrieved kill events in a clear and understandable format.
+    *   Verify that the output includes kill events from both LoL and VALORANT.
+    *   Check that the key information (killer, victim, timestamp, game) is displayed correctly for each kill event.
+5.  **Code Review:** Conduct a code review to ensure that the script is well-commented, easy to understand, and follows best practices.

@@ -1,11 +1,22 @@
 # Task ID: 1
-# Title: Initialize Project Repository
+# Title: Verify LoL Kill Event Processing and SQLite Storage
 # Status: done
 # Dependencies: None
 # Priority: high
-# Description: Initialize the project repository with Python 3.12 and TypeScript 5 support.
+# Description: Verify the end-to-end process of fetching LoL kill events, normalizing them, and storing them in SQLite using existing components.
 # Details:
-Create a new repository. Setup basic directory structure: collectors/, canonizer/, storage/, kpi/, chatgpt/. Initialize Python environment with `venv` and install necessary packages. Configure TypeScript environment with `tsconfig.json`.
+1.  Write a minimal test script that utilizes LoLFetcher to retrieve data from a sample LoL match (either a local file or a mock API response).
+2.  Pipe the output of LoLFetcher to LoLCanonizer, ensuring that CHAMPION_KILL events are correctly identified and transformed into 'kill' events.
+3.  Configure SQLiteStore to connect to a test SQLite database.
+4.  Pipe the output of LoLCanonizer to SQLiteStore, saving the normalized kill events into the database.
+5.  Implement error handling and logging to capture any issues during the process.
+6.  Ensure proper configuration and instantiation of LoLFetcher, LoLCanonizer, and SQLiteStore.
+7.  Consider using a small, representative sample match to reduce processing time and complexity.
 
 # Test Strategy:
-Verify the project structure and initial setup by manually inspecting the created directories and files. Run `python --version` and `tsc --version` to confirm the correct versions.
+1.  Execute the test script.
+2.  Verify that the SQLite database contains 'kill' events.
+3.  Check the database schema to ensure that the 'kill' events are stored in the correct format and columns.
+4.  Examine the logs for any errors or warnings during the process.
+5.  Compare the number of 'kill' events in the database with the expected number based on the sample match data.
+6.  Test with different sample matches, including those with varying numbers of kill events, to ensure robustness.

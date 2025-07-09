@@ -2,6 +2,26 @@
 League of Legends データ取得モジュール
 
 Riot Games APIを使用してLoLマッチデータを取得する
+
+=== プレイヤー検索機能について ===
+
+2023年11月以降、Riot GamesはSummoner NameからRiot IDへの移行を実施。
+現在のプレイヤー検索では以下の方法を使用：
+
+1. 【推奨】新しいRiot ID検索 (search_by_riot_id)
+   - 形式: GameName#Tagline (例: "Day1week#Day1")
+   - エンドポイント: account/v1/accounts/by-riot-id/{gameName}/{tagLine}
+   - リージョン: asia, americas, europe (platform固有ではない)
+   - 成功率: 高い
+
+2. 【レガシー】従来のSummoner Name検索 (fetch_summoner_by_name)
+   - 形式: Summoner Name (例: "Day1week")  
+   - エンドポイント: summoner/v4/summoners/by-name/{name}
+   - リージョン: jp1, kr, na1 etc (platform固有)
+   - 成功率: 低い（403エラー多発）
+
+※ 詳細な実装例とテストコードは api_test.py を参照
+※ Riot IDの分離方法: "GameName#Tagline".split("#") -> ["GameName", "Tagline"]
 """
 
 import asyncio
@@ -10,7 +30,8 @@ import time
 import json
 import requests
 import os
-from typing import Dict, Any, List, Callable, Optional
+import urllib.parse
+from typing import Dict, Any, List, Callable, Optional, Tuple
 from collections import defaultdict
 from datetime import datetime, timedelta
 
@@ -45,12 +66,33 @@ class DataValidationError(LoLFetcherError):
     pass
 
 
+class PlayerNotFoundError(LoLFetcherError):
+    """プレイヤーが見つからないエラー"""
+    pass
+
+
 class LoLFetcher:
-    """拡張されたLoLデータ取得クラス"""
+    """拡張されたLoLデータ取得クラス
+    
+    プレイヤー検索機能:
+    - search_by_riot_id(): 新しいRiot ID形式での検索（推奨）
+    - fetch_summoner_by_name(): レガシーSummoner Name検索（非推奨）
+    - fetch_summoner_by_puuid(): PUUID基盤検索（既存）
+    
+    使用例:
+        # 新しい方法（推奨）
+        fetcher = LoLFetcher(api_key)
+        account_data = fetcher.search_by_riot_id("Day1week", "Day1")
+        puuid = account_data["puuid"]
+        
+        # レガシー方法（非推奨、403エラーの可能性）
+        summoner_data = fetcher.fetch_summoner_by_name("Day1week")
+    """
     
     def __init__(self, api_key: str, region: str = "jp1", config: Optional[LoLConfig] = None):
         self.watch = LolWatcher(api_key)
         self.region = region
+        self.api_key = api_key  # Riot ID検索用に追加
         
         # 設定の初期化
         self.config = config or LoLConfig()
@@ -82,6 +124,15 @@ class LoLFetcher:
         if error_config.collect_metrics:
             self.metrics_history = []
             self.metrics_retention = timedelta(hours=error_config.metrics_retention_hours)
+        
+        # Riot IDリージョンマッピング（platform -> riot region）
+        self.riot_region_mapping = {
+            'jp1': 'asia',
+            'kr': 'asia', 
+            'na1': 'americas',
+            'euw1': 'europe',
+            'eun1': 'europe'
+        }
 
     def _setup_logging(self, error_config: ErrorHandlingConfig):
         """ログ設定のセットアップ"""
@@ -105,6 +156,170 @@ class LoLFetcher:
             file_handler = logging.FileHandler(error_config.log_file_path)
             file_handler.setFormatter(logging.Formatter(log_format))
             self.logger.addHandler(file_handler)
+
+    def search_by_riot_id(self, game_name: str, tag_line: str) -> Dict[str, Any]:
+        """新しいRiot ID形式でプレイヤーを検索
+        
+        2023年11月以降推奨の検索方法。Legacy APIよりも成功率が高い。
+        
+        Args:
+            game_name (str): Riot IDのゲーム名部分（例: "Day1week"）
+            tag_line (str): Riot IDのタグライン部分（例: "Day1"）
+            
+        Returns:
+            Dict[str, Any]: アカウント情報
+                {
+                    "puuid": "GnPKc40P...",
+                    "gameName": "Day1week", 
+                    "tagLine": "Day1"
+                }
+                
+        Raises:
+            PlayerNotFoundError: プレイヤーが見つからない場合
+            APIRateLimitError: レート制限エラー
+            LoLFetcherError: その他のAPIエラー
+            
+        Example:
+            >>> fetcher = LoLFetcher(api_key)
+            >>> # Riot ID "Day1week#Day1" を検索
+            >>> account = fetcher.search_by_riot_id("Day1week", "Day1")
+            >>> puuid = account["puuid"]
+            >>> summoner = fetcher.fetch_summoner_by_puuid(puuid)
+            
+        Note:
+            - Riot IDの形式: "GameName#Tagline"
+            - URLエンコードが自動で適用される
+            - asia リージョンエンドポイントを使用（JP プラットフォーム用）
+            - 実装詳細は api_test.py の search_riot_id() 関数を参照
+        """
+        
+        # リージョンマッピング取得
+        riot_region = self.riot_region_mapping.get(self.region, 'asia')
+        
+        # Game NameとTaglineをURLエンコード
+        encoded_game_name = urllib.parse.quote(game_name, safe='')
+        encoded_tag_line = urllib.parse.quote(tag_line, safe='')
+        
+        # Account APIでRiot ID検索
+        url = f'https://{riot_region}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{encoded_game_name}/{encoded_tag_line}'
+        headers = {
+            'X-Riot-Token': self.api_key.strip(),
+            'User-Agent': 'eSportsLoggingPipeline/1.0'
+        }
+        
+        try:
+            self.logger.info(f'Searching Riot ID: {game_name}#{tag_line} (region: {riot_region})')
+            response = requests.get(url, headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.logger.info(f'Riot ID found: {data.get("gameName")}#{data.get("tagLine")}')
+                return data
+            elif response.status_code == 404:
+                raise PlayerNotFoundError(f'Riot ID not found: {game_name}#{tag_line}')
+            elif response.status_code == 401:
+                raise LoLFetcherError('Invalid or expired API key')
+            elif response.status_code == 403:
+                raise LoLFetcherError('API key lacks access permissions')
+            elif response.status_code == 429:
+                raise APIRateLimitError('Rate limit exceeded')
+            else:
+                raise LoLFetcherError(f'API error {response.status_code}: {response.text[:200]}')
+                
+        except requests.RequestException as e:
+            raise LoLFetcherError(f'Network error during Riot ID search: {e}')
+
+    def search_player_comprehensive(self, player_identifier: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """包括的プレイヤー検索（Riot ID + Summoner情報）
+        
+        Riot ID形式の識別子を受け取り、アカウント情報とSummoner情報の両方を取得。
+        
+        Args:
+            player_identifier (str): プレイヤー識別子
+                - Riot ID形式: "GameName#Tagline" (例: "Day1week#Day1")
+                - Legacy Name形式: "SummonerName" (例: "Day1week")
+                
+        Returns:
+            Tuple[Dict[str, Any], Dict[str, Any]]: (アカウント情報, Summoner情報)
+                
+        Example:
+            >>> account, summoner = fetcher.search_player_comprehensive("Day1week#Day1")
+            >>> print(f"Player: {account['gameName']}#{account['tagLine']}")
+            >>> print(f"Level: {summoner['summonerLevel']}")
+            
+        Note:
+            - まずRiot ID検索を試行、失敗時にLegacy検索にフォールバック
+            - 成功率向上のため推奨される検索方法
+        """
+        
+        # Riot ID形式かチェック
+        if '#' in player_identifier:
+            game_name, tag_line = player_identifier.split('#', 1)
+            try:
+                # Riot ID検索を試行
+                account_data = self.search_by_riot_id(game_name, tag_line)
+                puuid = account_data["puuid"]
+                summoner_data = self.fetch_summoner_by_puuid(puuid)
+                return account_data, summoner_data
+                
+            except PlayerNotFoundError:
+                self.logger.warning(f'Riot ID not found: {player_identifier}, trying legacy search...')
+                # Legacy検索にフォールバック
+                return self._fallback_legacy_search(game_name)
+        else:
+            # Legacy形式として処理
+            return self._fallback_legacy_search(player_identifier)
+    
+    def _fallback_legacy_search(self, summoner_name: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """Legacy Summoner Name検索のフォールバック
+        
+        Note:
+            - 内部使用のみ（直接呼び出し非推奨）
+            - 2023年11月以降は403エラーが多発する可能性
+        """
+        try:
+            summoner_data = self.fetch_summoner_by_name(summoner_name)
+            # Legacy検索の場合、アカウント情報は制限的
+            account_data = {
+                "puuid": summoner_data["puuid"],
+                "gameName": summoner_data.get("name", summoner_name),
+                "tagLine": "unknown"  # Legacy APIでは取得不可
+            }
+            return account_data, summoner_data
+        except Exception as e:
+            raise PlayerNotFoundError(f'Player not found with any method: {summoner_name}') from e
+
+    def fetch_summoner_by_name(self, summoner_name: str) -> Dict[str, Any]:
+        """Legacy Summoner Name検索
+        
+        ⚠️ 非推奨: 2023年11月以降は403エラーが多発
+        新しいコードでは search_by_riot_id() を使用してください。
+        
+        Args:
+            summoner_name (str): Summoner Name (例: "Day1week")
+            
+        Returns:
+            Dict[str, Any]: Summoner情報
+            
+        Raises:
+            PlayerNotFoundError: プレイヤーが見つからない場合
+            LoLFetcherError: APIエラー（特に403が多い）
+            
+        Note:
+            - Legacy API: summoner/v4/summoners/by-name/{name}
+            - 互換性のために保持、新規実装では使用しない
+            - 詳細は api_test.py の search_summoner_legacy() を参照
+        """
+        try:
+            return self.watch.summoner.by_name(self.region, summoner_name)
+        except ApiError as e:
+            if e.response.status_code == 404:
+                raise PlayerNotFoundError(f'Summoner not found: {summoner_name}')
+            elif e.response.status_code == 403:
+                self.logger.warning(f'Legacy API access denied for: {summoner_name}. Try Riot ID search instead.')
+                raise LoLFetcherError(f'Legacy API access denied (403). Use Riot ID format instead.')
+            else:
+                raise LoLFetcherError(f'API error {e.response.status_code}: {e}') from e
 
     def set_slack_webhook(self, webhook_url: str):
         """Slack webhook URLを設定"""
@@ -407,7 +622,18 @@ class LoLFetcher:
         return None
     
     def fetch_summoner_by_puuid(self, puuid: str) -> Dict[str, Any]:
-        """PUUIDによるサマナー情報取得"""
+        """PUUIDによるサマナー情報取得
+        
+        Args:
+            puuid (str): プレイヤーの一意識別子
+            
+        Returns:
+            Dict[str, Any]: Summoner情報
+            
+        Note:
+            - 最も信頼性の高い検索方法
+            - Riot ID検索後のフォローアップで使用
+        """
         return self.watch.summoner.by_puuid(self.region, puuid)
     
     def batch_fetch_player_ranks(self, summoner_ids: List[str]) -> Dict[str, Any]:

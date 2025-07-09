@@ -1,11 +1,27 @@
 # Task ID: 4
-# Title: Implement Apex Legends Real-time Collector
+# Title: Implement Player Search with Riot ID Support
 # Status: pending
-# Dependencies: 1, 28
-# Priority: medium
-# Description: Implement the Overwolf real-time collector for Apex Legends using TypeScript and WebSockets.
+# Dependencies: 1, 2, 3
+# Priority: high
+# Description: Implement a player search system that supports Riot ID (GameName#Tagline), handles region mapping, fallback search methods, and retrieves detailed player information including match history and statistics.
 # Details:
-Create `collector/overwolf-apex.ts`. Implement `EventListener` to capture game events via Overwolf GEP. Handle WebSocket connections. Implement data parsing and queueing to local queue. Capture ring information.
+1.  **Riot ID Parsing and Validation:** Implement robust parsing logic to handle the GameName#Tagline format. Validate the Riot ID format and handle potential errors gracefully.
+2.  **Region Mapping:** Create a mapping system to associate Riot IDs with specific game regions (e.g., North America, Europe West). This may involve a configuration file or API calls to determine the correct region.
+3.  **Fallback Search Methods:** Implement fallback search methods in case the primary Riot ID search fails. This could include searching by account ID or other player identifiers.
+4.  **API Integration:** Integrate with relevant game APIs (e.g., Riot Games API) to retrieve player information, match history, and statistics. Handle API rate limits and errors effectively.
+5.  **Data Aggregation:** Aggregate data from multiple API endpoints to provide a comprehensive player profile. This may involve combining match history, statistics, and other relevant information.
+6.  **Error Handling:** Implement comprehensive error handling to gracefully handle API errors, invalid Riot IDs, and other potential issues.
+7.  **Caching:** Implement caching mechanisms to reduce API calls and improve performance. Consider using a local cache or a distributed caching system.
+8.  **User Interface (if applicable):** Design and implement a user interface for the player search system. This could be a web interface, a command-line interface, or an API endpoint.
+9.  **Configuration:** Make the system configurable to allow for easy updates to API keys, region mappings, and other settings.
 
 # Test Strategy:
-Simulate Apex Legends game events and verify that the collector captures and queues the data correctly. Check ring information capture.
+1.  **Riot ID Search:** Test the system with valid and invalid Riot IDs to ensure that the parsing and validation logic is working correctly.
+2.  **Region Mapping:** Verify that the region mapping is accurate and that the system is correctly associating Riot IDs with the appropriate game regions.
+3.  **Fallback Search:** Test the fallback search methods to ensure that they are working correctly in case the primary Riot ID search fails.
+4.  **API Integration:** Verify that the system is correctly integrating with the game APIs and that it is handling API rate limits and errors effectively.
+5.  **Data Aggregation:** Verify that the system is correctly aggregating data from multiple API endpoints to provide a comprehensive player profile.
+6.  **Error Handling:** Test the error handling logic to ensure that the system is gracefully handling API errors, invalid Riot IDs, and other potential issues.
+7.  **Caching:** Verify that the caching mechanisms are working correctly and that they are improving performance.
+8.  **Performance Testing:** Conduct performance testing to ensure that the system can handle a large number of concurrent searches.
+9.  **End-to-End Testing:** Perform end-to-end testing to ensure that the entire player search system is working correctly.
